@@ -34,7 +34,7 @@ enum Camera_Movement {
 // Default camera values
 const float YAW = -90.0f;
 const float PITCH = 0.0f;
-const float SPEED = 22.5f;
+const float SPEED = 12.5f;
 const float SENSITIVITY = 0.1f;
 const float ZOOM = 60.0f;
 
@@ -1101,7 +1101,7 @@ int main()
 
     // render
     // ------
-    glClearColor(0.05f, 0.05f, 0.55f, 1.0f);
+    glClearColor(0.15f, 0.35f, 0.25f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // don't forget to enable shader before setting uniforms
