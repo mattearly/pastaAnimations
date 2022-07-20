@@ -6,7 +6,7 @@
     "glad",
     "assimp",
     "glm",
-    "stb"
-
+    "stb",
+    "nativefiledialog"
   ]
 }
