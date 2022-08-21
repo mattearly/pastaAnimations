@@ -1,25 +1,5 @@
 ﻿#define STB_IMAGE_IMPLEMENTATION
 #include "pastaAnimations.h"
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <assimp/Importer.hpp>
-#include <assimp/quaternion.h>
-#include <assimp/postprocess.h>
-#include <assimp/vector3.h>
-#include <assimp/matrix4x4.h>
-#include <assimp/mesh.h>
-#include <assimp/scene.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/quaternion.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <stb_image.h>
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <iostream>
-#include <vector>
-#include <map>
 
 using namespace std;
 
@@ -34,9 +14,9 @@ enum Camera_Movement {
 // Default camera values
 const float YAW = -90.0f;
 const float PITCH = 0.0f;
-const float SPEED = 7.5f;
+const float SPEED = 5 * 7.5f;
 const float SENSITIVITY = 0.1f;
-const float ZOOM = 60.0f;
+const float ZOOM = 72.f;
 
 
 // An abstract camera class that processes input and calculates the corresponding Euler Angles, Vectors and Matrices for use in OpenGL
@@ -880,10 +860,9 @@ public:
 
   Bone* FindBone(const std::string& name) {
     auto iter = std::find_if(m_Bones.begin(), m_Bones.end(),
-      [&](const Bone& Bone)
-    {
-      return Bone.GetBoneName() == name;
-    }
+      [&](const Bone& Bone) {
+        return Bone.GetBoneName() == name;
+      }
     );
     if (iter == m_Bones.end()) return nullptr;
     else return &(*iter);
@@ -1015,7 +994,7 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 // camera
-Camera camera(glm::vec3(0.0f, 1.0f, 3.0f));
+Camera camera(glm::vec3(0, 50, 100));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -1024,8 +1003,32 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-int main()
-{
+char* model_file = NULL;
+char* anim_file = NULL;
+
+// pass in a model file when you run this
+int main() {
+  puts("Point To Your Model File");
+  nfdresult_t result = NFD_OpenDialog("fbx", "E:", &model_file);
+  if (result == NFD_OKAY) {
+    puts("Success!");
+  } else if (result == NFD_CANCEL) {
+    puts("User pressed cancel.");
+  } else {
+    printf("Error: %s\n", NFD_GetError());
+  }
+
+  puts("Point To Your Animation File");
+  nfdresult_t result2 = NFD_OpenDialog("fbx", NULL, &anim_file);
+  if (result2 == NFD_OKAY) {
+    puts("Success!");
+  } else if (result == NFD_CANCEL) {
+    puts("User pressed cancel.");
+  } else {
+    printf("Error: %s\n", NFD_GetError());
+  }
+
+
   // glfw: initialize and configure
   // ------------------------------
   glfwInit();
@@ -1040,8 +1043,7 @@ int main()
   // glfw window creation
   // --------------------
   GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
-  if (window == NULL)
-  {
+  if (window == NULL) {
     std::cout << "Failed to create GLFW window" << std::endl;
     glfwTerminate();
     return -1;
@@ -1056,8 +1058,7 @@ int main()
 
   // glad: load all OpenGL function pointers
   // ---------------------------------------
-  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-  {
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
     std::cout << "Failed to initialize GLAD" << std::endl;
     return -1;
   }
@@ -1071,23 +1072,24 @@ int main()
 
   // build and compile shaders
   // -------------------------
-  Shader ourShader("vert.glsl", "frag.glsl");
+  Shader ourShader("shaders/vert.glsl", "shaders/frag.glsl");
 
+  // turn on assimp logging for easier model troubleshooting
+  C_STRUCT aiLogStream logstream = aiGetPredefinedLogStream(aiDefaultLogStream_STDOUT, NULL); // log to console
+  aiAttachLogStream(&logstream); // attach
 
   // load models
   // -----------
-  Model ourModel("../../../../Walking/Walking.dae");
-  Animation danceAnimation("../../../../Walking/Walking.dae",&ourModel);
-  Animator animator(&danceAnimation);
-
+  Model ourModel(model_file);
+  Animation ourAnim(anim_file, &ourModel);
+  Animator animator(&ourAnim);
 
   // draw in wireframe
   //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
   // render loop
   // -----------
-  while (!glfwWindowShouldClose(window))
-  {
+  while (!glfwWindowShouldClose(window)) {
     // per-frame time logic
     // --------------------
     float currentFrame = glfwGetTime();
@@ -1114,7 +1116,8 @@ int main()
     ourShader.setMat4("view", view);
 
     auto transforms = animator.GetFinalBoneMatrices();
-    for (int i = 0; i < transforms.size(); ++i)
+    auto num_transforms = transforms.size();
+    for (int i = 0; i < num_transforms; ++i)
       ourShader.setMat4("finalBonesMatrices[" + std::to_string(i) + "]", transforms[i]);
 
 
@@ -1140,8 +1143,7 @@ int main()
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow* window)
-{
+void processInput(GLFWwindow* window) {
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, true);
 
@@ -1157,8 +1159,7 @@ void processInput(GLFWwindow* window)
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // ---------------------------------------------------------------------------------------------
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
   // make sure the viewport matches the new window dimensions; note that width and 
   // height will be significantly larger than specified on retina displays.
   glViewport(0, 0, width, height);
@@ -1166,10 +1167,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 // glfw: whenever the mouse moves, this callback is called
 // -------------------------------------------------------
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
-{
-  if (firstMouse)
-  {
+void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+  if (firstMouse) {
     lastX = xpos;
     lastY = ypos;
     firstMouse = false;
@@ -1186,7 +1185,6 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called
 // ----------------------------------------------------------------------
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-{
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
   camera.ProcessMouseScroll(yoffset);
 }

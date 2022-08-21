@@ -1,23 +1,29 @@
-﻿cmake_minimum_required (VERSION 3.8)
+﻿cmake_minimum_required (VERSION 3.15)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glad CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(assimp CONFIG REQUIRED)
-
-find_path(STB_INCLUDE_DIRS "stb.h")
+find_package(unofficial-nativefiledialog CONFIG REQUIRED)
+find_path(STB_INCLUDE_DIRS "stb_c_lexer.h")
 
 # Add source to this project's executable.
-add_executable (pastaAnimations "pastaAnimations.cpp" "pastaAnimations.h")
+set(EXE_NAME "pastaAnimations")
+add_executable (${EXE_NAME} "pastaAnimations.cpp" "pastaAnimations.h")
 
 target_include_directories(pastaAnimations PRIVATE ${STB_INCLUDE_DIRS})
 
-# link dem libs
-target_link_libraries(pastaAnimations PRIVATE glad::glad)
-target_link_libraries(pastaAnimations PRIVATE glfw)
-target_link_libraries(pastaAnimations PRIVATE glm::glm)
-target_link_libraries(pastaAnimations PRIVATE assimp::assimp)
+# link required libs
+target_link_libraries(pastaAnimations
+  PRIVATE
+   glad::glad
+   glfw
+   glm::glm
+   assimp::assimp
+   unofficial::nativefiledialog::nfd
+)
 
-configure_file(../frag.glsl ${CMAKE_BINARY_DIR}/pastaAnimations/frag.glsl COPYONLY)
-configure_file(../vert.glsl ${CMAKE_BINARY_DIR}/pastaAnimations/vert.glsl COPYONLY)
+file(COPY "${PROJECT_SOURCE_DIR}/shaders/" DESTINATION "${CMAKE_BINARY_DIR}/${EXE_NAME}/shaders/")
+# file(COPY "${PROJECT_SOURCE_DIR}/models/" DESTINATION "${CMAKE_BINARY_DIR}/${EXE_NAME}/models/")
+
 
 # TODO: Add tests and install targets if needed.
